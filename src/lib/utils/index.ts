@@ -28,9 +28,25 @@ import hljs from 'highlight.js';
 
 export const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
+export const formatNumber = (num: number): string => {
+	return new Intl.NumberFormat('en-US', { notation: 'compact', maximumFractionDigits: 1 }).format(num);
+};
+
 function escapeRegExp(string: string): string {
 	return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
+
+// Replace tokens outside code blocks only
+export const replaceOutsideCode = (content: string, replacer: (str: string) => string) => {
+	return content
+		.split(/(```[\s\S]*?```|`[\s\S]*?`)/)
+		.map((segment) => {
+			return segment.startsWith('```') || segment.startsWith('`')
+				? segment
+				: replacer(segment);
+		})
+		.join('');
+};
 
 export const replaceTokens = (content, char, user) => {
 	const tokens = [
@@ -47,20 +63,8 @@ export const replaceTokens = (content, char, user) => {
 		}
 	];
 
-	// Replace tokens outside code blocks only
-	const processOutsideCodeBlocks = (text, replacementFn) => {
-		return text
-			.split(/(```[\s\S]*?```|`[\s\S]*?`)/)
-			.map((segment) => {
-				return segment.startsWith('```') || segment.startsWith('`')
-					? segment
-					: replacementFn(segment);
-			})
-			.join('');
-	};
-
 	// Apply replacements
-	content = processOutsideCodeBlocks(content, (segment) => {
+	content = replaceOutsideCode(content, (segment) => {
 		tokens.forEach(({ regex, replacement }) => {
 			if (replacement !== undefined && replacement !== null) {
 				segment = segment.replace(regex, replacement);
@@ -357,9 +361,9 @@ export const generateInitialsImage = (name) => {
 	const initials =
 		sanitizedName.length > 0
 			? sanitizedName[0] +
-				(sanitizedName.split(' ').length > 1
-					? sanitizedName[sanitizedName.lastIndexOf(' ') + 1]
-					: '')
+			(sanitizedName.split(' ').length > 1
+				? sanitizedName[sanitizedName.lastIndexOf(' ') + 1]
+				: '')
 			: '';
 
 	ctx.fillText(initials.toUpperCase(), canvas.width / 2, canvas.height / 2);
@@ -515,10 +519,10 @@ export const compareVersion = (latest, current) => {
 	return current === '0.0.0'
 		? false
 		: current.localeCompare(latest, undefined, {
-				numeric: true,
-				sensitivity: 'case',
-				caseFirst: 'upper'
-			}) < 0;
+			numeric: true,
+			sensitivity: 'case',
+			caseFirst: 'upper'
+		}) < 0;
 };
 
 export const extractCurlyBraceWords = (text) => {
@@ -841,19 +845,21 @@ export const cleanText = (content: string) => {
 };
 
 export const removeDetails = (content, types) => {
-	for (const type of types) {
-		content = content.replace(
-			new RegExp(`<details\\s+type="${type}"[^>]*>.*?<\\/details>`, 'gis'),
-			''
-		);
-	}
-
-	return content;
+	return replaceOutsideCode(content, (segment) => {
+		for (const type of types) {
+			segment = segment.replace(
+				new RegExp(`<details\\s+type="${type}"[^>]*>.*?<\\/details>`, 'gis'),
+				''
+			);
+		}
+		return segment;
+	});
 };
 
 export const removeAllDetails = (content) => {
-	content = content.replace(/<details[^>]*>.*?<\/details>/gis, '');
-	return content;
+	return replaceOutsideCode(content, (segment) => {
+		return segment.replace(/<details[^>]*>.*?<\/details>/gis, '');
+	});
 };
 
 export const processDetails = (content) => {
@@ -973,9 +979,10 @@ export const blobToFile = (blob, fileName) => {
 	return file;
 };
 
-export const getPromptVariables = (user_name, user_location) => {
+export const getPromptVariables = (user_name, user_location, user_email = '') => {
 	return {
 		'{{USER_NAME}}': user_name,
+		'{{USER_EMAIL}}': user_email || 'Unknown',
 		'{{USER_LOCATION}}': user_location || 'Unknown',
 		'{{CURRENT_DATETIME}}': getCurrentDateTime(),
 		'{{CURRENT_DATE}}': getFormattedDate(),
@@ -1654,6 +1661,10 @@ export const getCodeBlockContents = (content: string): object => {
 			}
 		});
 	} else {
+		// Remove details tags from the content to check if there are any code blocks
+		// hidden in the details tags (e.g. reasoning, etc.)
+		content = removeAllDetails(content);
+
 		const inlineHtml = content.match(/<html>[\s\S]*?<\/html>/gi);
 		const inlineCss = content.match(/<style>[\s\S]*?<\/style>/gi);
 		const inlineJs = content.match(/<script>[\s\S]*?<\/script>/gi);

@@ -21,6 +21,7 @@
 	import XMark from '$lib/components/icons/XMark.svelte';
 	import DefaultFiltersSelector from './DefaultFiltersSelector.svelte';
 	import DefaultFeatures from './DefaultFeatures.svelte';
+	import BuiltinTools from './BuiltinTools.svelte';
 	import PromptSuggestions from './PromptSuggestions.svelte';
 	import AccessControlModal from '../common/AccessControlModal.svelte';
 	import LockClosed from '$lib/components/icons/LockClosed.svelte';
@@ -104,6 +105,7 @@
 		builtin_tools: true
 	};
 	let defaultFeatureIds = [];
+	let builtinTools = {};
 
 	let actionIds = [];
 	let accessControl = {};
@@ -192,6 +194,14 @@
 		} else {
 			if (info.meta.defaultFeatureIds) {
 				delete info.meta.defaultFeatureIds;
+			}
+		}
+
+		if (Object.keys(builtinTools).length > 0) {
+			info.meta.builtinTools = builtinTools;
+		} else {
+			if (info.meta.builtinTools) {
+				delete info.meta.builtinTools;
 			}
 		}
 
@@ -288,6 +298,7 @@
 
 			capabilities = { ...capabilities, ...(model?.meta?.capabilities ?? {}) };
 			defaultFeatureIds = model?.meta?.defaultFeatureIds ?? [];
+			builtinTools = model?.meta?.builtinTools ?? {};
 			tts = { voice: model?.meta?.tts?.voice ?? '' };
 
 			if ('access_control' in model) {
@@ -713,19 +724,19 @@
 						{/if}
 					</div>
 
-					<div class="my-2">
+					<div class="my-4">
 						<Knowledge bind:selectedItems={knowledge} />
 					</div>
 
-					<div class="my-2">
+					<div class="my-4">
 						<ToolsSelector bind:selectedToolIds={toolIds} tools={$tools ?? []} />
 					</div>
 
 					{#if ($functions ?? []).filter((func) => func.type === 'filter').length > 0 || ($functions ?? []).filter((func) => func.type === 'action').length > 0}
-						<hr class=" border-gray-100/30 dark:border-gray-850/30 my-2" />
+						<hr class=" border-gray-100/30 dark:border-gray-850/30 my-4" />
 
 						{#if ($functions ?? []).filter((func) => func.type === 'filter').length > 0}
-							<div class="my-2">
+							<div class="my-4">
 								<FiltersSelector
 									bind:selectedFilterIds={filterIds}
 									filters={($functions ?? []).filter((func) => func.type === 'filter')}
@@ -740,7 +751,7 @@
 							)}
 
 							{#if toggleableFilters.length > 0}
-								<div class="my-2">
+								<div class="my-4">
 									<DefaultFiltersSelector
 										bind:selectedFilterIds={defaultFilterIds}
 										filters={toggleableFilters}
@@ -750,7 +761,7 @@
 						{/if}
 
 						{#if ($functions ?? []).filter((func) => func.type === 'action').length > 0}
-							<div class="my-2">
+							<div class="my-4">
 								<ActionsSelector
 									bind:selectedActionIds={actionIds}
 									actions={($functions ?? []).filter((func) => func.type === 'action')}
@@ -759,9 +770,9 @@
 						{/if}
 					{/if}
 
-					<hr class=" border-gray-100/30 dark:border-gray-850/30 my-2" />
+					<hr class=" border-gray-100/30 dark:border-gray-850/30 my-4" />
 
-					<div class="my-2">
+					<div class="my-4">
 						<Capabilities bind:capabilities />
 					</div>
 
@@ -774,13 +785,19 @@
 							.map(([key, value]) => key)}
 
 						{#if availableFeatures.length > 0}
-							<div class="my-2">
+							<div class="my-4">
 								<DefaultFeatures {availableFeatures} bind:featureIds={defaultFeatureIds} />
 							</div>
 						{/if}
 					{/if}
 
-					<div class="my-2">
+					{#if capabilities.builtin_tools}
+						<div class="my-4">
+							<BuiltinTools bind:builtinTools />
+						</div>
+					{/if}
+
+					<div class="my-4">
 						<div class="flex w-full justify-between mb-1">
 							<div class="self-center text-xs font-medium text-gray-500">
 								{$i18n.t('TTS Voice')}
@@ -794,7 +811,7 @@
 						/>
 					</div>
 
-					<hr class=" border-gray-100/30 dark:border-gray-850/30 my-2" />
+					<hr class=" border-gray-100/30 dark:border-gray-850/30 my-4" />
 
 					<div class="my-2 flex justify-end">
 						<button

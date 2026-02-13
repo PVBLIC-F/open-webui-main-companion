@@ -65,6 +65,81 @@ def run_migrations():
         migrations_path = OPEN_WEBUI_DIR / "migrations"
         alembic_cfg.set_main_option("script_location", str(migrations_path))
 
+        # Clean up overlapping alembic_version entries before upgrading.
+        # Previous failed migrations may have left multiple version stamps
+        # on the same linear chain, which causes Alembic to error with
+        # "Requested revision X overlaps with other requested revisions Y".
+        try:
+            from sqlalchemy import text as sa_text
+
+            with engine.connect() as conn:
+                result = conn.execute(
+                    sa_text("SELECT version_num FROM alembic_version")
+                )
+                versions = [row[0] for row in result]
+
+                if len(versions) > 1:
+                    log.warning(
+                        f"Found {len(versions)} alembic version stamps: {versions}. "
+                        f"Cleaning up to keep only the latest."
+                    )
+                    # Build a map of the migration chain to find which versions
+                    # are ancestors of others. Keep only the most descendant version.
+                    from alembic.script import ScriptDirectory
+
+                    script = ScriptDirectory.from_config(alembic_cfg)
+                    to_remove = set()
+
+                    for v1 in versions:
+                        for v2 in versions:
+                            if v1 == v2:
+                                continue
+                            # Check if v1 is an ancestor of v2
+                            try:
+                                rev = script.get_revision(v1)
+                                walk = script.get_revision(v2)
+                                # Walk backwards from v2 to see if we hit v1
+                                visited = set()
+                                queue = [walk]
+                                while queue:
+                                    current = queue.pop(0)
+                                    if current is None:
+                                        continue
+                                    if current.revision in visited:
+                                        continue
+                                    visited.add(current.revision)
+                                    if current.revision == v1:
+                                        # v1 is ancestor of v2, remove v1
+                                        to_remove.add(v1)
+                                        break
+                                    if current.down_revision:
+                                        if isinstance(current.down_revision, tuple):
+                                            for dr in current.down_revision:
+                                                r = script.get_revision(dr)
+                                                if r:
+                                                    queue.append(r)
+                                        else:
+                                            r = script.get_revision(
+                                                current.down_revision
+                                            )
+                                            if r:
+                                                queue.append(r)
+                            except Exception:
+                                pass
+
+                    if to_remove:
+                        log.info(f"Removing stale version stamps: {to_remove}")
+                        for old_ver in to_remove:
+                            conn.execute(
+                                sa_text(
+                                    "DELETE FROM alembic_version WHERE version_num = :ver"
+                                ),
+                                {"ver": old_ver},
+                            )
+                        conn.commit()
+        except Exception as e:
+            log.warning(f"Could not clean up alembic versions: {e}")
+
         command.upgrade(alembic_cfg, "head")
     except Exception as e:
         log.exception(f"Error running migrations: {e}")

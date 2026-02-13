@@ -3297,7 +3297,6 @@ async def streaming_chat_response_handler(response, ctx):
 
                 async def stream_body_handler(response, form_data):
                     nonlocal content
-                    nonlocal content_blocks
                     nonlocal captured_usage
                     nonlocal usage
                     nonlocal output

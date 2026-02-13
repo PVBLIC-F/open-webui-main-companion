@@ -24,7 +24,6 @@ from open_webui.utils.word_generator import WordGenerator
 from open_webui.utils.auth import get_admin_user, get_verified_user
 from open_webui.utils.code_interpreter import execute_code_jupyter
 
-
 log = logging.getLogger(__name__)
 
 router = APIRouter()

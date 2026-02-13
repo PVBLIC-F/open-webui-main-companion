@@ -33,7 +33,6 @@ from open_webui.config import (
 )
 from open_webui.retrieval.vector.utils import process_metadata
 
-
 NO_LIMIT = 10000  # Reasonable limit to avoid overwhelming the system
 # Pinecone supports up to 1000 vectors/batch (official recommendation)
 BATCH_SIZE = 1000

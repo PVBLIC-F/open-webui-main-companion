@@ -316,3 +316,5 @@ tools/llm_council.py
 tools/langfuse-pipeline-template.py
 tools/langfuse-pipeline.py
 tools/openrouter-function.py
+tools/cmo.py
+tools/llm-council.py

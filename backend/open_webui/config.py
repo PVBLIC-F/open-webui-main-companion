@@ -141,7 +141,10 @@ def run_migrations():
         except Exception as e:
             log.warning(f"Could not clean up alembic versions: {e}")
 
-        command.upgrade(alembic_cfg, "head")
+        # Use "heads" (plural) to handle multi-branch migration graphs.
+        # With merge migrations and multiple branches, "head" fails if
+        # there are multiple leaf revisions. "heads" upgrades all branches.
+        command.upgrade(alembic_cfg, "heads")
     except Exception as e:
         log.exception(f"Error running migrations: {e}")
 

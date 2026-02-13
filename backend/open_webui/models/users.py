@@ -272,11 +272,6 @@ class UserSpendLimitForm(BaseModel):
     spend_limit_monthly: Optional[float] = None  # Monthly spend limit in USD (null = no limit)
     spend_limit_enabled: bool = False  # Whether limits are enforced
 
-    @field_validator("profile_image_url")
-    @classmethod
-    def check_profile_image_url(cls, v: str) -> str:
-        return validate_profile_image_url(v)
-
 
 class UsersTable:
     def insert_new_user(

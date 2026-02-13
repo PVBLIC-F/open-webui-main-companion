@@ -9,6 +9,8 @@ Create Date: 2025-01-17 12:00:00.000000
 from alembic import op
 import sqlalchemy as sa
 
+from open_webui.migrations.util import get_existing_tables
+
 revision = "33cc3721a72"
 down_revision = "018012973d35"
 branch_labels = None
@@ -16,6 +18,10 @@ depends_on = None
 
 
 def upgrade():
+    existing_tables = set(get_existing_tables())
+    if "gmail_sync_status" in existing_tables:
+        return
+
     # Create Gmail sync status table
     op.create_table(
         'gmail_sync_status',

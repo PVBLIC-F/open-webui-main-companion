@@ -18,6 +18,14 @@ depends_on = None
 
 def upgrade():
     # Add gmail_sync_enabled column to user table (PostgreSQL)
+    # Skip if column already exists (table may have been modified outside Alembic)
+    conn = op.get_bind()
+    result = conn.execute(sa.text(
+        "SELECT column_name FROM information_schema.columns "
+        "WHERE table_name = 'user' AND column_name = 'gmail_sync_enabled'"
+    ))
+    if result.fetchone():
+        return
     op.add_column('user', sa.Column('gmail_sync_enabled', sa.Integer(), server_default='0', nullable=False))
 
 

@@ -9,6 +9,8 @@ Create Date: 2026-01-13 12:00:00.000000
 from alembic import op
 import sqlalchemy as sa
 
+from open_webui.migrations.util import get_existing_tables
+
 revision = "d5e6f7a8b9c0"
 down_revision = "0b80d222da03"
 branch_labels = None
@@ -16,6 +18,10 @@ depends_on = None
 
 
 def upgrade():
+    existing_tables = set(get_existing_tables())
+    if "knowledge_drive_source" in existing_tables:
+        return
+
     # Create knowledge_drive_source table
     op.create_table(
         "knowledge_drive_source",

@@ -70,9 +70,10 @@ def run_migrations():
         # on the same linear chain, which causes Alembic to error with
         # "Requested revision X overlaps with other requested revisions Y".
         try:
-            from sqlalchemy import text as sa_text
+            from sqlalchemy import create_engine as _create_engine, text as sa_text
 
-            with engine.connect() as conn:
+            _cleanup_engine = _create_engine(DATABASE_URL)
+            with _cleanup_engine.connect() as conn:
                 result = conn.execute(
                     sa_text("SELECT version_num FROM alembic_version")
                 )

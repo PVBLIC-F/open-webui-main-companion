@@ -1,6 +1,6 @@
 """Add knowledge drive source and file tables
 
-Revision ID: a1b2c3d4e5f6
+Revision ID: d5e6f7a8b9c0
 Revises: 0b80d222da03
 Create Date: 2026-01-13 12:00:00.000000
 
@@ -9,7 +9,7 @@ Create Date: 2026-01-13 12:00:00.000000
 from alembic import op
 import sqlalchemy as sa
 
-revision = "a1b2c3d4e5f6"
+revision = "d5e6f7a8b9c0"
 down_revision = "0b80d222da03"
 branch_labels = None
 depends_on = None
